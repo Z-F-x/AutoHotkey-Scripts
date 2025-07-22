@@ -2,7 +2,8 @@
 SendMode Input
 SetWorkingDir %A_ScriptDir%
 
-#N::
+; Win + Ctrl + Shift + N hotkey
+#^+N::
 ; Try to get path from Explorer or Desktop
 path := GetActiveExplorerPath()
 if (path = "")
@@ -11,12 +12,8 @@ if (path = "")
     return
 }
 
-; Generate a new file name and create the file
-newFileName := CreateUniqueFile(path, "New Text Document", "txt")
-if (newFileName != "") {
-    ; Optional: Refresh the current Explorer window to show the new file
-    Send {F5}
-}
+; Create a new file without extension and immediately rename it
+newFileName := CreateNewFileAndRename(path)
 return
 
 ; --- Functions ---
@@ -72,13 +69,13 @@ GetActiveExplorerPath() {
     return ""
 }
 
-; Create a unique file in the specified directory
-CreateUniqueFile(directory, baseName, extension) {
+; Create a new file without extension and immediately put it in rename mode
+CreateNewFileAndRename(directory) {
+    baseName := "New File"
     counter := 1
+
     Loop {
-        fileName := (counter = 1)
-            ? baseName . "." . extension
-            : baseName . " (" . counter . ")." . extension
+        fileName := (counter = 1) ? baseName : baseName . " (" . counter . ")"
         fullPath := directory . "\" . fileName
 
         ; Check if file already exists
@@ -88,9 +85,15 @@ CreateUniqueFile(directory, baseName, extension) {
 
             ; Verify the file was created successfully
             if FileExist(fullPath) {
-                ; Optional: Show success message with path
-                ; ToolTip, Created: %fileName% in %directory%, , , 1
-                ; SetTimer, RemoveToolTip, 2000
+                ; Refresh the Explorer window to show the new file
+                Send {F5}
+
+                ; Wait a moment for the refresh to complete
+                Sleep, 200
+
+                ; Select the new file and put it in rename mode
+                SelectAndRenameFile(fileName)
+
                 return fileName
             } else {
                 MsgBox, 48, Error, Failed to create file: %fullPath%
@@ -107,8 +110,19 @@ CreateUniqueFile(directory, baseName, extension) {
     }
 }
 
-; Helper function to remove tooltip
-RemoveToolTip:
-SetTimer, RemoveToolTip, Off
-ToolTip
-return
+; Select the newly created file and put it in rename mode
+SelectAndRenameFile(fileName) {
+    ; Wait a bit more to ensure the file appears in Explorer
+    Sleep, 300
+
+    ; Try to select the file by typing its name (works in most Explorer views)
+    Send, %fileName%
+    Sleep, 100
+
+    ; Press F2 to enter rename mode
+    Send, {F2}
+
+    ; Alternative method if the above doesn't work:
+    ; We could also try Ctrl+A to select all, then type the filename to select it
+    ; But the above method should work in most cases
+}
