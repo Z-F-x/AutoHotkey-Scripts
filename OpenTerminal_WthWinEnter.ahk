@@ -1,62 +1,31 @@
-﻿#NoTrayIcon
-#SingleInstance Force
-
-;
-; Win + Enter: Opens Windows Terminal in default location or toggles existing terminal
-; Alt + Enter: Opens Windows Terminal in current directory (or Desktop if none available)
-;
-; Supports multiple workspaces or virtual desktops.
-;
 
 #Enter::
-    ToggleTerminal()
+    WinKeyOpenTerminalInCurrentDirectory()
 
-!Enter::
-    OpenTerminalInCurrentDirectory()
 
-ToggleTerminal() {
-    matcher := "ahk_class CASCADIA_HOSTING_WINDOW_CLASS"
-    DetectHiddenWindows, On
-    if WinExist(matcher) {
-
-        if !WinActive(matcher) {
-            ; Hide it first to alow raising it later on a different workspace
-            HideTerminal()
-            ShowTerminal()
-        } else if WinExist(matcher) {
-            HideTerminal()
-        }
-
-    } else {
-        OpenNewTerminal()
-    }
-}
-
-OpenNewTerminal() {
-    Run C:\Users\%A_UserName%\AppData\Local\Microsoft\WindowsApps\wt.exe
-    Sleep, 1000
-    ShowTerminal()
-}
-
-OpenTerminalInCurrentDirectory() {
+WinKeyOpenTerminalInCurrentDirectory() {
     currentDir := GetCurrentDirectory()
     if (currentDir = "") {
-        ; Fallback to Desktop if no current directory found
+        ; Fallback to Desktop if no directory found
         currentDir := A_Desktop
     }
-    Run C:\Users\%A_UserName%\AppData\Local\Microsoft\WindowsApps\wt.exe -d "%currentDir%"
+    ; Temporarily disable hotkey to prevent recursion
+    Hotkey, #Enter, Off
+    ; Use wt.exe directly (should be in PATH)
+    Run, wt.exe -d "%currentDir%"
     Sleep, 1000
     ShowTerminal()
+    Sleep, 500
+    Hotkey, #Enter, On
 }
+
+
 
 ShowTerminal() {
     WinShow ahk_class CASCADIA_HOSTING_WINDOW_CLASS
     WinActivate ahk_class CASCADIA_HOSTING_WINDOW_CLASS
 }
 
-HideTerminal() {
-    WinHide ahk_class CASCADIA_HOSTING_WINDOW_CLASS
-}
 
 GetCurrentDirectory() {
     ; Try to get current directory from File Explorer
@@ -98,13 +67,14 @@ GetExplorerPath() {
 GetVSCodePath() {
     ; Get workspace path from VS Code window title
     WinGetClass, winClass, A
-    if (InStr(winClass, "Chrome")) {
+    if (winClass = "Chrome_WidgetWin_1") {
         WinGetTitle, title, A
         if (InStr(title, "Visual Studio Code")) {
             ; Extract path from VS Code title (usually shows workspace folder)
-            if (RegExMatch(title, "([A-Za-z]:\\[^\\/:*?""<>|]+(?:\\[^\\/:*?""<>|]+)*)", match)) {
-                if (FileExist(match)) {
-                    return match
+            if (RegExMatch(title, "([A-Za-z]:\\[^\\/:*?\""<>|]+(?:\\[^\\/:*?\""<>|]+)*)", match)) {
+                ; Ensure it's a directory
+                if (FileExist(match1) && InStr(FileExist(match1), "D")) {
+                    return match1
                 }
             }
         }
@@ -116,15 +86,17 @@ GetAddressBarPath() {
     ; Try to get path from address bar of various applications
     WinGet, activeHwnd, ID, A
     ControlGetText, addressText, Edit1, ahk_id %activeHwnd%
-    if (addressText != "" && FileExist(addressText)) {
+    if (addressText != "" && FileExist(addressText) && InStr(FileExist(addressText), "D")) {
         return addressText
     }
 
     ; Try different control names for address bars
     ControlGetText, addressText, ToolbarWindow323, ahk_id %activeHwnd%
-    if (InStr(addressText, ":\") && FileExist(SubStr(addressText, InStr(addressText, ":\")-1))) {
+    if (InStr(addressText, ":\") && FileExist(SubStr(addressText, InStr(addressText, ":\")-1)) && InStr(FileExist(SubStr(addressText, InStr(addressText, ":\")-1)), "D")) {
         return SubStr(addressText, InStr(addressText, ":\")-1)
     }
 
     return ""
 }
+
+

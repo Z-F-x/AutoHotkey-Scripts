@@ -1,3 +1,7 @@
+; -------------------------------------------------------------
+;Create New Textfile Win + N — Desktop and Windows Explorer (With Copy Iteration)
+; -------------------------------------------------------------
+
 #NoEnv
 SendMode Input
 SetWorkingDir %A_ScriptDir%

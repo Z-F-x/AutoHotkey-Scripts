@@ -14,7 +14,7 @@
 ^!NumpadMult::SendInput ↑  ; Ctrl+Alt+Multiply
 ^!NumpadAdd::SendInput ↓   ; Ctrl+Alt+Plus
 ^!NumpadSub::SendInput ─   ; Ctrl+Alt+Minus
-^!NumpadEnter::Run, "C:\Users\%A_UserName%\AppData\Local\Microsoft\WindowsApps\wt.exe"
+
 
 ^!NumpadHome::SendInput ⌂
 ^!NumpadEnd::SendInput ☠
